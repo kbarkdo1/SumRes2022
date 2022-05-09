@@ -10,14 +10,27 @@
 // iterate through all times steps
 // iterate for 10 by 0.01
 
+// for every neuron
 // calculate voltage steps
+// calculate resting voltage difference
+// calculate image input
+// calculate neighboring inputs
+// calculate the second steps
 
-// take voltage steps
+// take average voltage step w/ heun
 
-// check for spiked Neurons
+// check overrun to 1
+// if 1
+  // record as spiked (hashtable?)
+  // note connections
+  // for each connection
+    // update with new input
+    // check overrun to 1
+    // if 1
+      // this seems like a great place for recursion, carefully
+      // or a list
 
-// handle spikes
-
-// handles future spikes
 
 // save data
+// save which neurons fired
+// save selective single neuron voltage

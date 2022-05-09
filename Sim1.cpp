@@ -1,6 +1,7 @@
 // Welcome to the Machine
 
 #include <iostream>
+#include <fstream>
 #include <string>
 #include <vector>
 #include <stdio.h>      /* printf, scanf, puts, NULL */
@@ -49,37 +50,49 @@ int main() {
   }
 
 
-
-
+  printf("%2.4f, %2.4f, \n", voltages[0], image[0]);
+  printf("%2.4f, %2.4f, \n", voltages[915], image[915]);
+  vector<int>* vec_arr = new vector<int> [1000];
+  vector<float> n0_volts;
+  vector<float> n915_volts;
   // iterate through all times steps
   // iterate for 10 by 0.01
   float step = 0.01;
   for(float t=0; t<10; t = t+step) {
-
+    printf("Time = %2.2f", t);
     // for every neuron
     float* k1 = new float [1000];
     float* k2 = new float [1000];
     float* delta = new float [1000];
     int fired[1000];
+    for(int i =0; i< 1000; i++) {
+      fired[i] = 0;
+    }
     vector<int> mybabies; // list of neurons that need firing
 
     for(int n=0; n < 1000; n++) {
+      if (n==0) {
+        n0_volts.push_back(voltages[0]);
+      }
+      if (n==915) {
+        n915_volts.push_back(voltages[915]);
+      }
       // calculate voltage steps
       // calculate resting voltage difference
       float volt_diff = -voltages[n];
-      printf("voltage_diff = %2.4f\n", volt_diff);
+      //printf("voltage_diff = %2.4f\n", volt_diff);
       // calculate image input
       float img_in = image[n];
-      printf("img_in = %2.4f\n", img_in);
+      //printf("img_in = %2.4f\n", img_in);
       // calculate neighboring inputs
 
       k1[n] = volt_diff + img_in;
 
       float volt_diff_2 = -(voltages[n]+k1[n]);
-      printf("voltage_diff = %2.4f\n", volt_diff);
+      //printf("voltage_diff = %2.4f\n", volt_diff);
       // calculate image input
       float img_in_2 = image[n];
-      printf("img_in = %2.4f\n", img_in);
+      //printf("img_in = %2.4f\n", img_in);
       // calculate neighboring inputs
 
       k2[n] = volt_diff_2 + img_in_2;
@@ -103,6 +116,7 @@ int main() {
       // check overrun - note k1 is just the forward step
 
       if (voltages[n] + delta[n] >= 1) {
+        //printf("We have a firing!");
         voltages[n] = 0;
         fired[n] = 1;
         int from = n;
@@ -125,6 +139,12 @@ int main() {
       int here = mybabies[i];
       float neighbor_in = 0;
       int target = here;
+      /* wait this doesn't work. Right now if it has five neurons firing,
+      it might count up three the first time, then all five the second time,
+      and approximate a total of 8 inputs, because it recounted the three the
+      second time around. if 5 neurons point into it, and 4 fire, it will be
+      in mybabies 4 times, maybe this is the solution */
+      /*
       for(int from = 0; from < (1000); from++) {
         // note this is not how to calcualte neighbors if only action
         // potential neighbors count
@@ -135,7 +155,13 @@ int main() {
       int nn = 1000;
       float s_N = s / float(nn);
       neighbor_in = neighbor_in * s_N;
-      delta[here] = delta[here] + neighbor_in; // note no RK2 on this
+      */
+      // attempt 2
+      int s = 1;
+      int nn = 1000;
+      float s_N = s / float(nn);
+      delta[here] = delta[here] + s_N; // one more tiny connection
+      // delta[here] = delta[here] + neighbor_in; // note no RK2 on this
       if (voltages[here] + delta[here] >= 1) {
         voltages[here] = 0;
         fired[here] = 1;
@@ -148,10 +174,21 @@ int main() {
       }
     }
 
+    for(int i=0; i< 1000; i++) {
+      vec_arr[i].push_back(fired[i]);
+      if (fired[i]==0) {
+        voltages[i] = voltages[i]+delta[i];
+      } else if (fired[i]==1) {
+        fired[i]=0;
+        if (voltages[i] != 0) {
+          printf("error: fired neuron has nonzero voltage");
+        }
+      }
+    }
     /*
 
     // calculate the second steps
-    
+
     for rec
     int s = 1;
     int nn = 1000;
@@ -178,5 +215,27 @@ int main() {
       // save which neurons fired
       // save selective single neuron voltages
   }
+  for(int i=0; i<1000; i+=1) {
+    ofstream file;
+    float k = float(i)/1000;
+    file.open ("outputvecs/"+ to_string(k) + ".txt");
+    for(int j=0; j< 10/0.01; j++) {
+      file << vec_arr[i][j] << endl;
+    }
+    file.close();
+
+  }
+  ofstream volt_file;
+  volt_file.open ("outputvecs/n0_volts.txt");
+  for(int j=0; j< 10/0.01; j++) {
+    volt_file << n0_volts[j] << endl;
+  }
+  volt_file.close();
+  ofstream volt_file2;
+  volt_file2.open ("outputvecs/n915_volts.txt");
+  for(int j=0; j< 10/0.01; j++) {
+    volt_file2 << n915_volts[j] << endl;
+  }
+  volt_file2.close();
   return 0;
 };

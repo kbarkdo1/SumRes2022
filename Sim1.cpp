@@ -215,6 +215,8 @@ int main() {
       // save which neurons fired
       // save selective single neuron voltages
   }
+  /*
+  //for n output files
   for(int i=0; i<1000; i+=1) {
     ofstream file;
     float k = float(i)/1000;
@@ -225,6 +227,24 @@ int main() {
     file.close();
 
   }
+  */
+  ofstream file;
+  file.open ("spike_times.txt");
+  for(int i=0; i<1000; i+=1) {
+    for(int j=0; j< 10/0.01; j++) {
+      file << (vec_arr[i][j] * (i+1)) << endl;
+    }
+
+  }
+  file.close();
+  file.open ("timetime.txt");
+  for(int i=0; i<1000; i+=1) {
+    for(int j=0; j< 10/0.01; j++) {
+      float k=float(j)/100;
+      file << k << endl;
+    }  
+  }
+  file.close();
   ofstream volt_file;
   volt_file.open ("outputvecs/n0_volts.txt");
   for(int j=0; j< 10/0.01; j++) {

@@ -10,11 +10,25 @@
 
 using namespace std;
 
+/*
+Overall problems:
+Firing is calculated without checking inhibition first. A neuron that is inhibited
+won't see that inhibition if it fires from just the input and ICs.
+
+Redundancy: input spiking is calculated twice-as a spiking child
+and again for the total updating)(and discarded the first time)
+
+*/
+
+
+
+void chase_spikes(vector<int> to_check, float* voltages, float* delta, int* fired, int* connect, int neur_num);
+
 int main() {
   // initialize all variables
   // make neuron connections
   int neur_num = 1000;
-  int time = 10;
+  float time = 10;
   int* connect = new int [neur_num*neur_num];
 
   float check_ratio=0;
@@ -63,7 +77,7 @@ int main() {
   vector<float> n915_volts;
   // iterate through all times steps
   // iterate for 10 by 0.01
-  ofstream raster;
+
   float step = 0.01;
   float f = 1;
   //float B = 1;
@@ -131,14 +145,6 @@ int main() {
 
       if (voltages[n] + delta[n] >= 1) {
         //printf("We have a firing!");
-        raster.open ("spikes.txt");
-        raster << n << endl;
-        raster.close();
-
-        raster.open ("times.txt");
-        raster << t << endl;
-        raster.close();
-
         voltages[n] = 0;
         fired[n] = 1;
         int from = n;
@@ -152,61 +158,30 @@ int main() {
       // iterating through mybabies - note k1 is just the forward step
 
     }
+    chase_spikes(mybabies, voltages, delta, fired, connect, neur_num);
 
-    for(int i=0; i< mybabies.size(); i++) {
-      // recalculating action potential
-      if (!fired[mybabies[i]]) { // i f its already fired
-        continue;
-      }
-      int here = mybabies[i];
-      float neighbor_in = 0;
-      int target = here;
-      /* wait this doesn't work. Right now if it has five neurons firing,
-      it might count up three the first time, then all five the second time,
-      and approximate a total of 8 inputs, because it recounted the three the
-      second time around. if 5 neurons point into it, and 4 fire, it will be
-      in mybabies 4 times, maybe this is the solution */
-      /*
-      for(int from = 0; from < (neur_num); from++) {
-        // note this is not how to calcualte neighbors if only action
-        // potential neighbors count
-        neighbor_in = neighbor_in + connect[target * neur_num + from]
-          * fired[from];
-      }
-      int s = 1;
-      int nn = neur_num;
-      float s_N = s / float(nn);
-      neighbor_in = neighbor_in * s_N;
-      */
-      // attempt 2
-      int s = 1;
-      int nn = neur_num;
-      float s_N = s / float(nn);
-      delta[here] = delta[here] + s_N; // one more tiny connection
-      // delta[here] = delta[here] + neighbor_in; // note no RK2 on this
-      if (voltages[here] + delta[here] >= 1) {
-        raster.open ("spikes.txt");
-        raster << n << endl;
-        raster.close();
 
-        raster.open ("times.txt");
-        raster << t << endl;
-        raster.close();
-        voltages[here] = 0;
-        fired[here] = 1;
-        int from = here;
-        for(int target=0; target < neur_num; target++) {
-          if (connect[target * neur_num + from]) {
-            mybabies.push_back(target);
-          }
-        }
-      }
-    }
 
     for(int i=0; i< neur_num; i++) {
       vec_arr[i].push_back(fired[i]);
       if (fired[i]==0) {
-        voltages[i] = voltages[i]+delta[i];
+        float neighbor_in = 0;
+        int target = i;
+        for(int from = 0; from < (neur_num); from++) {
+          // note this is not how to calcualte neighbors if only action
+          // potential neighbors count
+          neighbor_in = neighbor_in + connect[target * neur_num + from]
+            * fired[from];
+        }
+        int s = 1;
+        int nn = neur_num;
+        float s_N = s / float(nn);
+        neighbor_in = neighbor_in * s_N;
+        if (voltages[i]+delta[i]+neighbor_in >= 1) {
+          //printf("unfired overrun, %d, %2.6f\n", i, voltages[i]+delta[i]+neighbor_in);
+        } else {
+          voltages[i] = voltages[i]+delta[i]+neighbor_in;
+        }
       } else if (fired[i]==1) {
         fired[i]=0;
         if (voltages[i] != 0) {
@@ -257,25 +232,22 @@ int main() {
 
   }
   */
-  /*
-  ofstream file;
-  file.open ("spike_times.txt");
+  ofstream raster;
+  raster.open ("spikes.txt");
+  ofstream times;
+  times.open ("times.txt");
   for(int i=0; i<neur_num; i+=1) {
-    for(int j=0; j< time/0.01; j++) {
-      file << (vec_arr[i][j] * (i+1)) << endl;
+    for(float j=0; j < time; j+=0.01) {
+      if (vec_arr[i][j]) {
+        raster << to_string(i) << endl;
+        times << to_string(j) << endl;
+      }
     }
+  }
+  raster.close();
+  times.close();
 
-  }
-  file.close();
-  file.open ("timetime.txt");
-  for(int i=0; i<neur_num; i+=1) {
-    for(int j=0; j< time/0.01; j++) {
-      float k=float(j)/100;
-      file << k << endl;
-    }
-  }
-  file.close();
-  */
+
   ofstream volt_file;
   volt_file.open ("outputvecs/n0_volts.txt");
   for(int j=0; j< time/0.01; j++) {
@@ -290,3 +262,82 @@ int main() {
   volt_file2.close();
   return 0;
 };
+
+
+void chase_spikes(vector<int> to_check, float* voltages, float* delta, int* fired, int* connect, int neur_num) {
+  // printf("chasing_spikes with %zu ", to_check.size());
+  // printf("voltage 0: %2.4f ", voltages[915]);
+  vector<int> mybabies;
+  if (to_check.size()< 1) {
+    return;
+  }
+  for(int i=0; i<to_check.size(); i++) {
+    // recalculating action potential
+    if (!fired[to_check[i]]) { // i f its already fired
+      continue;
+    }
+    int here = to_check[i];
+    float neighbor_in = 0;
+    int target = here;
+
+    for(int from = 0; from < (neur_num); from++) {
+      // note this is not how to calcualte neighbors if only action
+      // potential neighbors count
+      neighbor_in = neighbor_in + connect[target * neur_num + from]
+        * fired[from];
+        /*
+        if (neighbor_in != 0) {
+          printf("  %2.4f,%2.4f,%2.4f,%2.4f ", voltages[i], delta[i], neighbor_in, voltages[here] + delta[here] + neighbor_in);
+        }
+        */
+    }
+
+    int s = 1;
+    int nn = neur_num;
+    float s_N = s / float(nn);
+    neighbor_in = neighbor_in * s_N;
+    // printf("neighbors_in: %2.4f", neighbor_in);
+    /* wait this doesn't work. Right now if it has five neurons firing,
+    it might count up three the first time, then all five the second time,
+    and approximate a total of 8 inputs, because it recounted the three the
+    second time around. if 5 neurons point into it, and 4 fire, it will be
+    in mybabies 4 times, maybe this is the solution */
+    /*
+    for(int from = 0; from < (neur_num); from++) {
+      // note this is not how to calcualte neighbors if only action
+      // potential neighbors count
+      neighbor_in = neighbor_in + connect[target * neur_num + from]
+        * fired[from];
+    }
+    int s = 1;
+    int nn = neur_num;
+    float s_N = s / float(nn);
+    neighbor_in = neighbor_in * s_N;
+    */
+    // attempt 2
+
+    // delta[here] = delta[here] + s_N; // one more tiny connection
+    // delta[here] = delta[here] + neighbor_in; // note no RK2 on this
+    // printf("future voltage: %d %2.4f, ", here, voltages[here] + delta[here] + neighbor_in);
+
+    printf("child: %2.4f ", (1-voltages[here]-delta[here]) - neighbor_in);
+    if (((1-voltages[here]-delta[here]) - neighbor_in) <= 0) {
+      printf("CHECKCHEKC ");
+    }
+    if (voltages[here] + delta[here] + neighbor_in >= 1) {
+      //  printf("<-%d spiked \n", here);
+      printf("child spike");
+      voltages[here] = 0;
+      fired[here] = 1;
+      int from = here;
+      // push children for analysis
+      for(int target=0; target < neur_num; target++) {
+        if (connect[target * neur_num + from]) {
+          mybabies.push_back(target);
+        }
+      }
+    }
+  }
+  chase_spikes(mybabies, voltages, delta, fired, connect, neur_num);
+  return;
+}

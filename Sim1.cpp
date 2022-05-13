@@ -29,20 +29,21 @@ int main() {
   // initialize all variables
   // make neuron connections
   float forcings[10];
-  forcings[0] = 0.90;
-  forcings[1] = 0.90;
-  forcings[2] = 0.95;
-  forcings[3] = 1.00;
-  forcings[4] = 1.05;
-  forcings[5] = 1.10;
-  forcings[6] = 1.15;
-  forcings[7] = 1.20;
-  forcings[8] = 1.25;
-  forcings[9] = 1.30;
+
+  float start = 0.85;
+  float force_inc = 0.05;
+  ofstream f_vals;
+  f_vals.open("forcings.txt");
+  for(int i=0; i < 10; i++) {
+    forcings[i] = start+force_inc;
+    start+=force_inc;
+    f_vals << forcings[i] << endl;
+    printf("%2.6f\n", forcings[i]);
+  }
 
   ofstream avg_fir;
   avg_fir.open("avg_firing.txt");
-  // for(int z=0; z<10; z++) {
+  for(int z=0; z<1; z++) {
     int neur_num = 1000;
     float cycles = 10.00;
 
@@ -69,9 +70,10 @@ int main() {
     // iterate for 10 by 0.01
 
     float step = 0.01;
-    float f = float(1)/(150*10); // 150 = average image strength * 10 = avg of 10 connections per neurons.
+    float f = forcings[z];
+    // float f = float(1)/(150*10); // 150 = average image strength * 10 = avg of 10 connections per neurons.
     printf("fL %2.6f", f);
-    float s = 1;
+    float s = 2;
     // printf("all values \n");
     //float B = 1;
     for(float t=0; t<cycles; t = t+step) {
@@ -156,7 +158,7 @@ int main() {
   // Outputs:
 
     avg_fir << make_outputs(neur_num, cycles, vec_arr, n0_volts, n915_volts) << endl;
-  // }
+  }
   // deallocation, baby!
   /*
   delete[] connect;
@@ -189,7 +191,7 @@ void init_global(float* connect, float* image, float* voltages, int* fired, int 
     connect[i*neur_num + i] = 0;
   }
 
-
+  /* // file read in.
   ifstream library_reader;
   library_reader.clear();
   library_reader.open("im_stripes.txt");
@@ -213,13 +215,13 @@ void init_global(float* connect, float* image, float* voltages, int* fired, int 
     for (int j=0; j<img_vec_len; j++) {
       int path = rand() % 1000;
       if (path == 1) {
-        /* // all this stuff below is for dynamic connection strengths
+        // all this stuff below is for dynamic connection strengths
         int seed = rand() % 40;
         seed = 120-seed;
         float volt = seed / (150);
         printf("index: %d ", i*img_vec_len + j);
         B[i*img_vec_len + j] = volt;
-        */
+        //
         B[i*img_vec_len + j] = 1;
       } else {
         B[i*img_vec_len + j] = 0;
@@ -227,19 +229,6 @@ void init_global(float* connect, float* image, float* voltages, int* fired, int 
 
     }
   }
-
-
-  //read in image C++
-
-  /*
-  for(int i = 0; i < neur_num; i++) {  // make image input
-    int seed = rand() % 400;
-    seed = 1200-seed;
-    float volt = seed / 1000.0000;
-    image[i] = volt;
-  }
-  */
-
   for(int i = 0; i < neur_num; ++i) {
     for(int j = 0; j < 1; ++j) {
       for(int k = 0; k < img_vec_len; ++k) {
@@ -247,6 +236,19 @@ void init_global(float* connect, float* image, float* voltages, int* fired, int 
       }
     }
   }
+  */
+  //read in image C++
+
+
+  for(int i = 0; i < neur_num; i++) {  // make image input
+    int seed = rand() % 400;
+    seed = 1200-seed;
+    float volt = seed / 1000.0000;
+    image[i] = volt;
+  }
+
+
+
 
 
 
@@ -361,16 +363,18 @@ float make_outputs(int neur_num, float cycles, vector<int>* vec_arr, vector<floa
   volt_times.close();
 
 
-  float n_avg;
-  float total_avg;
+  float n_avg=0;
+  float total_avg = 0;
 
   for(int i=0; i<neur_num; i+=1) {
     for(int j=0; j < cycles/0.01; j++) {
       n_avg += vec_arr[i][j];
     }
-    n_avg = n_avg / (cycles/0.01);
+    n_avg = n_avg / (cycles);
     total_avg+=n_avg;
+    // printf("total_avg: %d %2.4f  ", i, total_avg);
   }
+  // printf("%2.6f %d \n", total_avg, neur_num);
   total_avg = total_avg / (neur_num);
   return total_avg;
-  }
+}

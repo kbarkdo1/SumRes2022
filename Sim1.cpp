@@ -30,7 +30,7 @@ int main() {
   // make neuron connections
   float forcings[10];
 
-  float start = 0.85;
+  float start = 1.00;
   float force_inc = 0.05;
   ofstream f_vals;
   f_vals.open("forcings.txt");
@@ -43,7 +43,7 @@ int main() {
 
   ofstream avg_fir;
   avg_fir.open("avg_firing.txt");
-  for(int z=0; z<10; z++) {
+  for(int z=0; z<1; z++) {
     int neur_num = 1000;
     float cycles = 10.00;
 
@@ -191,10 +191,10 @@ void init_global(float* connect, float* image, float* voltages, int* fired, int 
     connect[i*neur_num + i] = 0;
   }
 
-  /* // file read in.
+  // file read in.
   ifstream library_reader;
   library_reader.clear();
-  library_reader.open("im_stripes.txt");
+  library_reader.open("im_camera.txt");
   float temp=0;
   vector<float> IM;
   while(!library_reader.eof()) {     //create/fill image vector, IM (c1)
@@ -236,17 +236,17 @@ void init_global(float* connect, float* image, float* voltages, int* fired, int 
       }
     }
   }
-  */
+  
   //read in image C++
 
-
+  /*
   for(int i = 0; i < neur_num; i++) {  // make image input
     int seed = rand() % 400;
     seed = 1200-seed;
     float volt = seed / 1000.0000;
     image[i] = volt;
   }
-
+  */
 
 
 

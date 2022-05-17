@@ -43,7 +43,7 @@ int main() {
 
   ofstream avg_fir;
   avg_fir.open("avg_firing.txt");
-  for(int z=0; z<1; z++) {
+  for(int z=0; z<10; z++) {
     int neur_num = 1000;
     float cycles = 10.00;
 

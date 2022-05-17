@@ -30,8 +30,8 @@ int main() {
   // make neuron connections
   float forcings[10];
 
-  float start = 1.00;
-  float force_inc = 0.05;
+  float start = float(1)/float(1500);
+  float force_inc = 0.0;
   ofstream f_vals;
   f_vals.open("forcings.txt");
   for(int i=0; i < 10; i++) {

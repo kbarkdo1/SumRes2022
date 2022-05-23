@@ -385,9 +385,7 @@ float make_outputs(int neur_num, float cycles, vector<int>* num_firing) {
   f_rate.open("f_rate.txt");
   // printf("\n %2.4f %2.4f \n", cycles, (cycles)); 
   for(int i=0; i<neur_num; i+=1) {
-    for(int j=0; j < cycles/0.01; j++) {
-      n_avg += vec_arr[i][j];
-    }
+    n_avg=num_firing[i]
     if(i==213) {
       printf("213: %2.4f, %2.4f", n_avg, n_avg/cycles);
     }
@@ -400,10 +398,6 @@ float make_outputs(int neur_num, float cycles, vector<int>* num_firing) {
     if(i==23) { printf(" 23: %2.4f", n_avg); }
     if(i==29) { printf(" 29: %2.4f", n_avg); }
     if(i==39) { printf(" 39: %2.4f", n_avg); }
-
-
-
-
 
     f_rate << n_avg << endl;
     total_avg+=n_avg;

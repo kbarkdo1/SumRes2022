@@ -23,7 +23,7 @@ and again for the total updating)(and discarded the first time)
 
 void init_global(float* connect, float* image, float* voltages, int* fired, int neur_num);
 void chase_spikes(vector<int> to_check, float* voltages, float* delta, int* fired, float* connect, int neur_num, float s);
-float make_outputs(int neur_num, float cycles, vector<int>* vec_arr, vector<float> n0_volts, vector<float> n915_volts); // returns avg firing rate
+float make_outputs(int neur_num, float cycles, vector<int>* num_firing); // returns avg firing rate
 
 int main() {
   // initialize all variables
@@ -46,6 +46,17 @@ int main() {
   ofstream avg_fir;
   avg_fir.open("avg_firing.txt");
   for(int z=0; z<1; z++) {
+    ofstream raster;
+    raster.open ("spikes.txt");
+    ofstream times;
+    times.open ("times.txt");
+    ofstream volt_file;
+    volt_file.open ("tn_volts.txt" );
+    ofstream volt_file2;
+    ofstream volt_times;
+    volt_file2.open ("tn2_volts.txt");
+    volt_times.open ("volt_times.txt");
+    
     int neur_num = 1000;
     float cycles = 100.00;
 
@@ -65,9 +76,10 @@ int main() {
       }// sums neighbors if neighbors fire.
     }
     */
-    vector<int>* vec_arr = new vector<int> [neur_num];
-    vector<float> n0_volts;
-    vector<float> n915_volts;
+    vector<int>* num_firing = new vector<int> [neur_num];
+    // vector<int>* vec_arr = new vector<int> [neur_num];
+    // vector<float> n0_volts;
+    // vector<float> n915_volts;
     // iterate through all times steps
     // iterate for 10 by 0.01
 
@@ -89,10 +101,10 @@ int main() {
 
       for(int n=0; n < neur_num; n++) {
         if (n==tn) {
-          n0_volts.push_back(voltages[tn]); // voltage trace
+          volt_file << voltages[tn] << endl; // voltage trace
         }
         if (n==tn2) {
-          n915_volts.push_back(voltages[tn2]); // voltage trace
+          volt_file2 << voltages[tn2] << endl; // voltage trace
         }
         // calculate voltage steps
         float volt_diff = -voltages[n]; // calculate resting voltage difference
@@ -158,6 +170,9 @@ int main() {
             voltages[i] = voltages[i]+delta[i]+neighbor_in; // forward step
           }
         } else if (fired[i]==1) { // resets spikes
+          raster << i << endl;
+          times << t << endl;
+          num_firing[i] +=1;
           voltages[i]=0;
         }
       }
@@ -171,7 +186,7 @@ int main() {
 
   // Outputs:
 
-    avg_fir << make_outputs(neur_num, cycles, vec_arr, n0_volts, n915_volts) << endl;
+    avg_fir << make_outputs(neur_num, cycles, num_firing) << endl;
     ofstream A;
     A.open ("connectivity.txt" );
     for(int i=0; i< 1000; i++) {
@@ -189,6 +204,11 @@ int main() {
     }
     fBp.close();
 
+    raster.close();
+    times.close();
+    volt_file.close();
+    volt_file2.close();
+    volt_times.close();
 
 
 
@@ -357,47 +377,8 @@ void chase_spikes(vector<int> to_check, float* voltages, float* delta, int* fire
   return;
 }
 
-float make_outputs(int neur_num, float cycles, vector<int>* vec_arr, vector<float> n0_volts, vector<float> n915_volts) {
+float make_outputs(int neur_num, float cycles, vector<int>* num_firing) {
   printf("%s\n", "making ouputs");
-  // Raster Plot for MatLab:
-  ofstream raster;
-  raster.open ("spikes.txt");
-  ofstream times;
-  times.open ("times.txt");
-
-  for(int i=0; i<neur_num; i+=1) {
-    for(int j=0; j < cycles/0.01; j++) {
-      if (vec_arr[i][j]) {
-        raster << i << endl;
-        times << float(j)*0.01 << endl;
-        // printf("cycle: %2.6f\n", j);
-      }
-    }
-  }
-  raster.close();
-  times.close();
-
-  // Boring Voltage Trace:
-  ofstream volt_file;
-  volt_file.open ("n0_volts.txt" );
-  for(int j=0; j< cycles/0.01; j++) {
-    volt_file << n0_volts[j] << endl;
-  }
-  volt_file.close();
-  // Cool Voltage Trace
-  ofstream volt_file2;
-  ofstream volt_times;
-  volt_file2.open ("n915_volts.txt");
-  volt_times.open ("volte_times.txt");
-
-  for(int j=0; j< cycles/0.01; j++) {
-    volt_file2 << n915_volts[j] << endl;
-    volt_times << float(j)*0.01 << endl;
-  }
-  volt_file2.close();
-  volt_times.close();
-
-
   float n_avg=0;
   float total_avg = 0;
   ofstream f_rate;

@@ -301,18 +301,17 @@ void init_global(float* connect, float* image, float* voltages, int* fired, int 
     Be << endl;
   }
   Be.close();
-  for(int i=0; i<neur_num; i++) {
-  }
 
   for(int i = 0; i < neur_num; i++) {
-    image[i]=0;
+    image[i]=0; 
+    printf(" image %d, %2.4f  \n", i, image[i]);
     for(int j = 0; j < 1; j++) {
       for(int k = 0; k < img_vec_len; k++) {
         image[i] += B[i*neur_num + k] * img_vec[k][j];
       }
     }
     printf(" image %d, %2.4f  \n", i, image[i]);
-  }
+ }
   
   //read in image C++
   /*

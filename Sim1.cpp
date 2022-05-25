@@ -31,7 +31,7 @@ int main() {
   float forcings[20];
   int tn =926;//  and 928    //TRACKING NEURON
   int tn2=928;
-  float start = float(4)/float(1500);
+  float start = float(5)/float(1500);
   // float start = 1;
   float force_inc = 0.0;
   ofstream f_vals;
@@ -263,9 +263,9 @@ void init_global(float* connect, float* image, float* voltages, int* fired, int 
   library_reader.close();
   int img_vec_len = IM.size() - 1;
   printf("   IM.size = %zu   ", IM.size());
-  float img_vec[img_vec_len][1];
+  float img_vec[img_vec_len];
   for(int i=0; i<img_vec_len; i++) {
-    img_vec[i][0] = IM[i];
+    img_vec[i] = IM[i];
     // printf(" img_vec %d: %4.4f \n", i, img_vec[i][0]);
   }
   float* B = new float [neur_num*img_vec_len];
@@ -290,6 +290,7 @@ void init_global(float* connect, float* image, float* voltages, int* fired, int 
         B[i*img_vec_len + j] = 1;
         Be << "1 ";
         counter += 1;
+        if (i==149 && j==5) {printf("\n at 149,5 \n");}
       } else {
         B[i*img_vec_len + j] = 0;
         Be << "0 ";
@@ -306,7 +307,7 @@ void init_global(float* connect, float* image, float* voltages, int* fired, int 
     image[i]=0; 
     printf(" image %d, %2.4f  \n", i, image[i]);
     for(int k = 0; k < 10000; k++) {
-      image[i] += B[i*neur_num + k] * img_vec[k][0];
+      image[i] += B[i*img_vec_len + k] * IM[k];
     }
     printf(" image %d, %2.4f  \n", i, image[i]);
  }

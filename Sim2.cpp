@@ -56,8 +56,10 @@ int main() {
     ofstream volt_times;
     volt_file2.open ("tn2_volts.txt");
     volt_times.open ("volt_times.txt");
-    
-    int neur_num = 1000;
+    ofstream act_char;
+    act_char.open ("act_char.txt");
+
+    int neur_num = 2000;
     float cycles = 100.00;
 
 
@@ -145,7 +147,8 @@ int main() {
       }
 
       chase_spikes(mybabies, voltages, delta, fired, connect, neur_num, s);
-
+      
+      int fired_now = 0;
       for(int i=0; i< neur_num; i++) { // voltage updating with delta
         if (fired[i]==0) { // updates if not fired
           float neighbor_in = 0;
@@ -173,10 +176,14 @@ int main() {
         } else if (fired[i]==1) { // resets spikes
           raster << i << endl;
           times << t << endl;
+          fired_now++;
           num_firing[i] = num_firing[i] + 1;
           voltages[i]=0;
         }
       }
+      act_char << float(fired_now)/float(neur_num) << endl;
+      fired_now=0;
+
       for(int i=0; i< neur_num; i++) {
         fired[i]=0;
       }
@@ -231,11 +238,18 @@ int main() {
 void init_global(float* connect, float* image, float* voltages, int* fired, int neur_num) {
 
   // float check_ratio=0;
-  for(int from = 0; from < (neur_num); from++) {
-    for(int target = 0; target < (neur_num); target++) {
-      int seed = rand() % 100 ;
+  // 0<=n < 1000 = Excitatory
+  // // 1000 <= n < 2000 = Inhibitory
+  float j_ee = 1;
+  float j_ei = -2;
+  float j_ii = -1.8;
+  float j_ie = 1;
+  float K = 10;
+  for(int from = 0; from < (neur_num/2); from++) {
+    for(int target = 0; target < (neur_num/2); target++) {
+      int seed = rand() % neur_num/K;
       if (seed == 1) {
-        connect[target*neur_num + from] = 1;
+        connect[target*neur_num + from] = j_ee;
         // printf(" %d", connect[target*neur_num + from]);
         // check_ratio++;
       } else {
@@ -243,12 +257,52 @@ void init_global(float* connect, float* image, float* voltages, int* fired, int 
       }
     }
   }
+  
+  for(int from = (neur_num/2); from < neur_num; from++) {
+    for(int target = 0; target < (neur_num/2); target++) {
+      int seed = rand() % neur_num/K;
+      if (seed == 1) {
+        connect[target*neur_num + from] = j_ie;
+        // printf(" %d", connect[target*neur_num + from]);
+        // check_ratio++;
+      } else {
+        connect[target*neur_num + from] = 0;
+      }
+    }
+  }
+
+  for(int from = (neur_num/2); from < neur_num; from++) {
+    for(int target = (neur_num/2); target < neur_num; target++) {
+      int seed = rand() % neur_num/K;
+      if (seed == 1) {
+        connect[target*neur_num + from] = j_ii;
+        // printf(" %d", connect[target*neur_num + from]);
+        // check_ratio++;
+      } else {
+        connect[target*neur_num + from] = 0;
+      }
+    }
+  }
+
+  for(int from = 0; from < (neur_num/2); from++) {
+    for(int target = (neur_num/2); target < neur_num; target++) {
+      int seed = rand() % neur_num/K;
+      if (seed == 1) {
+        connect[target*neur_num + from] = j_ee;
+        // printf(" %d", connect[target*neur_num + from]);
+        // check_ratio++;
+      } else {
+        connect[target*neur_num + from] = 0;
+      }
+    }
+  }
+
   // printf("check ratio: %3.6f", float(check_ratio)/(neur_num*neur_num));
 
   for(int i=0; i < neur_num; i++) {   // set horiztonal to zero, no reccurence
     connect[i*neur_num + i] = 0;
   }
-  
+  /*  
   // file read in.
   ifstream library_reader;
   library_reader.clear();
@@ -280,13 +334,13 @@ void init_global(float* connect, float* image, float* voltages, int* fired, int 
       int path = rand() % 1000;
       if (path == 1) {
         // all this stuff below is for dynamic connection strengths
-        /* 
+         
         int seed = rand() % 40;
         seed = 120-seed;
         float volt = seed / (150);
         // printf("index: %d ", i*img_vec_len + j);
         B[i*img_vec_len + j] = volt;
-        */
+        
         B[i*img_vec_len + j] = 1;
         Be << "1 ";
         counter += 1;
@@ -302,7 +356,7 @@ void init_global(float* connect, float* image, float* voltages, int* fired, int 
     Be << endl;
   }
   Be.close();
-
+  
   for(int i = 0; i < neur_num; i++) {
     image[i]=0; 
     printf(" image %d, %2.4f  \n", i, image[i]);
@@ -313,20 +367,15 @@ void init_global(float* connect, float* image, float* voltages, int* fired, int 
  }
   
   //read in image C++
-  /*
-  
-  for(int i = 0; i < neur_num; i++) {  // make image input
-    srand(i);
-    int seed = rand() % 2000;
-    seed = 5000-seed;
-    float volt = seed / 1000.0000;
-    image[i] = volt;
-    if (i ==599 || i==609 || i==617 || i==622 || i==624 || i==628 || i==637 || i==641 || i==616 || i==620 || i==629 ) {
-      printf("\n %d image: %2.4f", i, image[i]);
-    }
-
-  }
   */
+  
+  for(int i = 0; i < neur_num/2; i++) {  // make image input
+    image[i] = 1;
+  }
+  for(int i=neur_num/2; i<neur_num; i++) {
+    image[i]=0.8;
+  }
+
   for(int i = 0; i < neur_num; i++) {   // make neuron voltages
     int seed = rand() % 1000;
     float volt = seed / 1000.0000;

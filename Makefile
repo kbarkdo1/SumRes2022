@@ -5,8 +5,11 @@ CXXFLAGS=-g -std=c++11 -Werror -D_GLIBCXX_DEBUG
 # unittest++ keeps its object files in this directory.
 
 # This target builds your main program.
-Sim1: Sim1.o
-	$(CXX) $(CXXFLAGS) -o $@ Sim1.o
+Sim2: Sim2.o $(HFILES)
+	$(CXX) $(CXXFLAGS) -a $@ Sim2.o
+
+# Sim1: Sim1.o
+# 	$(CXX) $(CXXFLAGS) -o $@ Sim1.o
 
 
 # This target describes how to compile a .o file from a .cpp file.

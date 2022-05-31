@@ -43,7 +43,10 @@ int main() {
     f_vals << forcings[i] << endl;
     printf("%2.6f\n", forcings[i]);
   }
-
+  int round_counter=0;
+  float fir_ex=0;
+  float fir_in=0;
+  
   ofstream avg_fir;
   avg_fir.open("avg_firing.txt");
   for(int z=0; z<1; z++) {
@@ -195,18 +198,23 @@ int main() {
         }
       }
      
-      float fir_ex=0;
+      
       for(int i=0; i<excitatory; i++) {
         fir_ex+= fired[i];
       }
-      act_ex << float(fir_ex)/float(excitatory) << endl;
-
-      float fir_in=0;
       for(int i=excitatory; i < neur_num; i++) {
         fir_in += fired[i];
       }
-      act_in << float(fir_in)/float(inhibitory) << endl;
-
+     
+      round_counter++;
+      if (round_counter==10) {
+        act_ex << float(fir_ex)/float(excitatory) << endl;
+        act_in << float(fir_in)/float(inhibitory) << endl;
+        round_counter=0;
+        fir_ex=0;
+        fir_in=0;
+      }
+      
       fired_now=0;
       
       

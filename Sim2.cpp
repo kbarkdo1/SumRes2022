@@ -7,6 +7,7 @@
 #include <stdio.h>      /* printf, scanf, puts, NULL */
 #include <stdlib.h>     /* srand, rand */
 #include <unistd.h>
+#include <cmath>
 
 using namespace std;
 
@@ -21,7 +22,7 @@ and again for the total updating)(and discarded the first time)
 */
 
 
-void init_global(float* connect, float* image, float* voltages, int* fired, int neur_num);
+void init_global(float* connect, float* image, float* voltages, int* fired, int neur_num, int excitatory);
 void chase_spikes(vector<int> to_check, float* voltages, float* delta, int* fired, float* connect, int neur_num, float s);
 float make_outputs(int neur_num, float cycles, vector<int> num_firing); // returns avg firing rate
 
@@ -58,8 +59,10 @@ int main() {
     volt_times.open ("volt_times.txt");
     ofstream act_char;
     act_char.open ("act_char.txt");
-
-    int neur_num = 2000;
+    
+    int excitatory = 1000;
+    int inhibitory = 1000;
+    int neur_num = excitatory + inhibitory;
     float cycles = 100.00;
 
 
@@ -67,7 +70,7 @@ int main() {
     float* image = new float [neur_num];
     float* voltages = new float [neur_num];
     int* fired = new int [neur_num];
-    init_global(connect, image, voltages, fired, neur_num);
+    init_global(connect, image, voltages, fired, neur_num, excitatory);
 
     printf("%2.4f, %2.4f, \n", voltages[tn], image[tn]);
     printf("%2.4f, %2.4f, \n", voltages[tn2], image[tn2]);
@@ -235,21 +238,22 @@ int main() {
   return 0;
 };
 
-void init_global(float* connect, float* image, float* voltages, int* fired, int neur_num) {
+void init_global(float* connect, float* image, float* voltages, int* fired, int neur_num, int excitatory) {
 
   // float check_ratio=0;
   // 0<=n < 1000 = Excitatory
   // // 1000 <= n < 2000 = Inhibitory
+  
   float j_ee = 1;
   float j_ei = -2;
   float j_ii = -1.8;
   float j_ie = 1;
   float K = 10;
-  for(int from = 0; from < (neur_num/2); from++) {
-    for(int target = 0; target < (neur_num/2); target++) {
+  for(int from = 0; from < excitatory; from++) {
+    for(int target = 0; target < excitatory; target++) {
       int seed = rand() % neur_num/K;
       if (seed == 1) {
-        connect[target*neur_num + from] = j_ee;
+        connect[target*neur_num + from] = float(j_ee)/sqrt(K);
         // printf(" %d", connect[target*neur_num + from]);
         // check_ratio++;
       } else {
@@ -258,11 +262,11 @@ void init_global(float* connect, float* image, float* voltages, int* fired, int 
     }
   }
   
-  for(int from = (neur_num/2); from < neur_num; from++) {
-    for(int target = 0; target < (neur_num/2); target++) {
+  for(int from = excitatory; from < neur_num; from++) {
+    for(int target = 0; target < excitatory; target++) {
       int seed = rand() % neur_num/K;
       if (seed == 1) {
-        connect[target*neur_num + from] = j_ie;
+        connect[target*neur_num + from] = float(j_ie)/sqrt(K);
         // printf(" %d", connect[target*neur_num + from]);
         // check_ratio++;
       } else {
@@ -271,11 +275,11 @@ void init_global(float* connect, float* image, float* voltages, int* fired, int 
     }
   }
 
-  for(int from = (neur_num/2); from < neur_num; from++) {
-    for(int target = (neur_num/2); target < neur_num; target++) {
+  for(int from = excitatory; from < neur_num; from++) {
+    for(int target = excitatory; target < neur_num; target++) {
       int seed = rand() % neur_num/K;
       if (seed == 1) {
-        connect[target*neur_num + from] = j_ii;
+        connect[target*neur_num + from] = float(j_ii)/sqrt(K);
         // printf(" %d", connect[target*neur_num + from]);
         // check_ratio++;
       } else {
@@ -284,11 +288,11 @@ void init_global(float* connect, float* image, float* voltages, int* fired, int 
     }
   }
 
-  for(int from = 0; from < (neur_num/2); from++) {
-    for(int target = (neur_num/2); target < neur_num; target++) {
+  for(int from = 0; from < excitatory; from++) {
+    for(int target = excitatory; target < neur_num; target++) {
       int seed = rand() % neur_num/K;
       if (seed == 1) {
-        connect[target*neur_num + from] = j_ee;
+        connect[target*neur_num + from] = float(j_ee)/sqrt(K);
         // printf(" %d", connect[target*neur_num + from]);
         // check_ratio++;
       } else {

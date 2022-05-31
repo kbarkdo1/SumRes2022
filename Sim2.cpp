@@ -32,8 +32,8 @@ int main() {
   float forcings[20];
   int tn =926;//  and 928    //TRACKING NEURON
   int tn2=928;
-  float start = float(5)/float(1500);
-  // float start = 1;
+  // float start = float(5)/float(1500);
+  float start = 2;
   float force_inc = 0.0;
   ofstream f_vals;
   f_vals.open("forcings.txt");
@@ -57,13 +57,23 @@ int main() {
     ofstream volt_times;
     volt_file2.open ("tn2_volts.txt");
     volt_times.open ("volt_times.txt");
-    ofstream act_char;
-    act_char.open ("act_char.txt");
+    ofstream act_ex;
+    act_ex.open ("act_ex.txt");
+    ofstream act_in;
+    act_in.open ("act_in.txt");
+    
     
     int excitatory = 1000;
     int inhibitory = 1000;
     int neur_num = excitatory + inhibitory;
-    float cycles = 100.00;
+    float cycles = 10.00;
+    
+    vector<float> ex_sum;
+    vector<float> in_sum;
+    for(int i=0; i< neur_num; i++) {
+      ex_sum.push_back(0);
+      in_sum.push_back(0);
+    }
 
 
     float* connect = new float [neur_num*neur_num];
@@ -156,6 +166,7 @@ int main() {
         if (fired[i]==0) { // updates if not fired
           float neighbor_in = 0;
           int target = i;
+
           for(int from = 0; from < (neur_num); from++) {
             neighbor_in = neighbor_in + connect[target * neur_num + from]
               * fired[from]; // sums neighbors if neighbors fire.
@@ -179,13 +190,39 @@ int main() {
         } else if (fired[i]==1) { // resets spikes
           raster << i << endl;
           times << t << endl;
-          fired_now++;
           num_firing[i] = num_firing[i] + 1;
           voltages[i]=0;
         }
       }
-      act_char << float(fired_now)/float(neur_num) << endl;
+     
+      float fir_ex=0;
+      for(int i=0; i<excitatory; i++) {
+        fir_ex+= fired[i];
+      }
+      act_ex << float(fir_ex)/float(excitatory) << endl;
+
+      float fir_in=0;
+      for(int i=excitatory; i < neur_num; i++) {
+        fir_in += fired[i];
+      }
+      act_in << float(fir_in)/float(inhibitory) << endl;
+
       fired_now=0;
+      
+      
+      for(int i=0; i<neur_num; i++) {
+        float ex_input_add=0;
+        float in_input_add=0;
+        for(int j=0; j<excitatory; j++) {
+          ex_input_add = connect[i*neur_num + j] * fired[j];
+        }
+        ex_sum[i] += ex_input_add;
+        
+        for(int j=excitatory; j<neur_num; j++) {
+          in_input_add = connect[i*neur_num + j] * fired[j];
+        }
+        in_sum[i] += in_input_add;
+      }
 
       for(int i=0; i< neur_num; i++) {
         fired[i]=0;
@@ -200,9 +237,9 @@ int main() {
     avg_fir << make_outputs(neur_num, cycles, num_firing) << endl;
     ofstream A;
     A.open ("connectivity.txt" );
-    for(int i=0; i< 1000; i++) {
-      for(int j=0; j< 1000; j++) {
-        A << connect[i*1000 + j] << ' ';
+    for(int i=0; i< neur_num; i++) {
+      for(int j=0; j< neur_num; j++) {
+        A << connect[i*neur_num + j] << ' ';
       }
       A << endl;
     }
@@ -210,10 +247,19 @@ int main() {
     
     ofstream fBp;
     fBp.open ("fBp.txt" );
-    for(int i=0; i<1000; i++) {
+    ofstream ex_sum_out;
+    ex_sum_out.open ("ex_sum.txt");
+    ofstream in_sum_out;
+    in_sum_out.open ("in_sum.txt");
+
+    for(int i=0; i<neur_num; i++) {
       fBp << image[i] << endl;
+      ex_sum_out << ex_sum[i] << endl;
+      in_sum_out << in_sum[i] << endl;
     }
     fBp.close();
+    ex_sum_out.close();
+    in_sum_out.close();
 
     raster.close();
     times.close();
@@ -248,7 +294,7 @@ void init_global(float* connect, float* image, float* voltages, int* fired, int 
   float j_ei = -2;
   float j_ii = -1.8;
   float j_ie = 1;
-  float K = 10;
+  float K = 40;
   for(int from = 0; from < excitatory; from++) {
     for(int target = 0; target < excitatory; target++) {
       int seed = rand() % neur_num/K;

@@ -30,14 +30,14 @@ int main() {
   // initialize all variables
   // make neuron connections
   float forcings[20];
-  int tn =926;//  and 928    //TRACKING NEURON
-  int tn2=928;
+  int tn =1;//  and 928    //TRACKING NEURON
+  int tn2=2;
   // float start = float(5)/float(1500);
-  float start = 2;
+  float start = 1;
   float force_inc = 0.0;
   ofstream f_vals;
   f_vals.open("forcings.txt");
-  for(int i=0; i < 20; i++) {
+  for(int i=0; i < 1; i++) {
     forcings[i] = start+force_inc;
     start+=force_inc;
     f_vals << forcings[i] << endl;
@@ -108,7 +108,7 @@ int main() {
     float f = forcings[z];
     // float f = float(1)/(150*10); // 150 = average image strength * 10 = avg of 10 connections per neurons.
     printf("fL %2.6f", f);
-    float s = 1;
+    float s = neur_num;
     // printf("all values \n");
     //float B = 1;
     for(float t=0; t<cycles; t = t+step) {
@@ -176,14 +176,14 @@ int main() {
           }
           float s_N = s / float(neur_num); // S/N from DE
           neighbor_in = neighbor_in * s_N; // neighbor adjustment
-          /*
-           * if (i==tn && neighbor_in !=0 ) {
+          
+          if (i==tn && neighbor_in !=0 ) {
             printf(" %d receieved %2.4f fron neighs \n", tn, neighbor_in);
           }
           if (i==tn2 && neighbor_in !=0 ) {
             printf(" %d receieved %2.4f fron neighs \n", tn2, neighbor_in);
           }
-          */
+          
 
           if (voltages[i]+delta[i]+neighbor_in >= 1) { // failed overrun double check
             printf("unfired overrun, %d, %2.6f, %2.6f\n", i, voltages[i]+delta[i], voltages[i]+delta[i]+neighbor_in);
@@ -224,12 +224,12 @@ int main() {
         for(int j=0; j<excitatory; j++) {
           ex_input_add = connect[i*neur_num + j] * fired[j];
         }
-        ex_sum[i] += ex_input_add;
+        ex_sum[i] = ex_sum[i] + ex_input_add;
         
         for(int j=excitatory; j<neur_num; j++) {
           in_input_add = connect[i*neur_num + j] * fired[j];
         }
-        in_sum[i] += in_input_add;
+        in_sum[i] = in_sum[i] + in_input_add;
       }
 
       for(int i=0; i< neur_num; i++) {
@@ -320,7 +320,7 @@ void init_global(float* connect, float* image, float* voltages, int* fired, int 
     for(int target = 0; target < excitatory; target++) {
       int seed = rand() % neur_num/K;
       if (seed == 1) {
-        connect[target*neur_num + from] = float(j_ie)/sqrt(K);
+        connect[target*neur_num + from] = float(j_ei)/sqrt(K);
         // printf(" %d", connect[target*neur_num + from]);
         // check_ratio++;
       } else {
@@ -346,7 +346,7 @@ void init_global(float* connect, float* image, float* voltages, int* fired, int 
     for(int target = excitatory; target < neur_num; target++) {
       int seed = rand() % neur_num/K;
       if (seed == 1) {
-        connect[target*neur_num + from] = float(j_ee)/sqrt(K);
+        connect[target*neur_num + from] = float(j_ie)/sqrt(K);
         // printf(" %d", connect[target*neur_num + from]);
         // check_ratio++;
       } else {
@@ -428,10 +428,10 @@ void init_global(float* connect, float* image, float* voltages, int* fired, int 
   */
   
   for(int i = 0; i < neur_num/2; i++) {  // make image input
-    image[i] = 1;
+    image[i] = 1*0.5*sqrt(K);
   }
   for(int i=neur_num/2; i<neur_num; i++) {
-    image[i]=0.8;
+    image[i]=0.8*0.5*sqrt(K);
   }
 
   for(int i = 0; i < neur_num; i++) {   // make neuron voltages

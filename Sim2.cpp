@@ -82,8 +82,8 @@ int main() {
     float threshold[neur_num];
     init_global(connect, image, voltages, fired, neur_num, excitatory);
 
-    printf("%2.4f, %2.4f, \n", voltages[tn], image[tn]);
-    printf("%2.4f, %2.4f, \n", voltages[tn2], image[tn2]);
+    // printf("%2.4f, %2.4f, \n", voltages[tn], image[tn]);
+    // printf("%2.4f, %2.4f, \n", voltages[tn2], image[tn2]);
     vector<int> num_firing;
     for(int i=0; i< neur_num; i++) {
       num_firing.push_back(0);
@@ -108,13 +108,15 @@ int main() {
     float step = 0.001;
     float f = forcings[z];
     // float f = float(1)/(150*10); // 150 = average image strength * 10 = avg of 10 connections per neurons.
-    printf("fL %2.6f", f);
+    // printf("fL %2.6f", f);
     float s = neur_num;
     // printf("all values \n");
     //float B = 1;
     for(float t=0; t<cycles; t = t+step) {
       // printf("Time = %2.3f", t);
-      printf("ex_sum, in_sum, %d: %2.4f %2.4f  ", tn, ex_sum[tn], in_sum[tn]);
+      // printf("ex_sum, in_sum, %d: %2.4f %2.4f  ", tn, ex_sum[tn], in_sum[tn]);
+      printf("thresh %d: %2.4f \n", tn, threshold[tn]);
+
       // for every neuron
       float* k1 = new float [neur_num];
       float* k2 = new float [neur_num];
@@ -182,10 +184,11 @@ int main() {
           if (i==tn && neighbor_in !=0 ) {
             printf(" %d receieved %2.4f fron neighs \n", tn, neighbor_in);
           }
+          /*
           if (i==tn2 && neighbor_in !=0 ) {
             printf(" %d receieved %2.4f fron neighs \n", tn2, neighbor_in);
           }
-          
+          */
 
           if (voltages[i]+delta[i]+neighbor_in >= threshold[i]) { // failed overrun double check
             printf("unfired overrun, %d, %2.6f, %2.6f\n", i, voltages[i]+delta[i], voltages[i]+delta[i]+neighbor_in);
@@ -487,7 +490,7 @@ void chase_spikes(vector<int> to_check, float* voltages, float* delta, int* fire
     float s_N = s / float(neur_num); // constant calculation
     neighbor_in = neighbor_in * s_N; // constant calculation
 
-    if (voltages[here] + delta[here] + neighbor_in >= threshold[i]) { // check for new firing
+    if (voltages[here] + delta[here] + neighbor_in >= threshold[here]) { // check for new firing
       if (fired[here]!=1) {
         fired[here] = 1; // sets as fired
         int from = here;

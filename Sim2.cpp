@@ -23,7 +23,7 @@ and again for the total updating)(and discarded the first time)
 
 
 void init_global(float* connect, float* image, float* voltages, int* fired, int neur_num, int excitatory);
-void chase_spikes(vector<int> to_check, float* voltages, float* delta, int* fired, float* connect, int neur_num, float s);
+void chase_spikes(vector<int> to_check, float* voltages, float* delta, int* fired, float* connect, int neur_num, float s, float* threshold);
 float make_outputs(int neur_num, float cycles, vector<int> num_firing); // returns avg firing rate
 
 int main() {
@@ -46,7 +46,9 @@ int main() {
   int round_counter=0;
   float fir_ex=0;
   float fir_in=0;
-  
+  float phi = 0.3;
+  float lambda  = 0.2;
+
   ofstream avg_fir;
   avg_fir.open("avg_firing.txt");
   for(int z=0; z<1; z++) {
@@ -72,21 +74,23 @@ int main() {
     float cycles = 10.00;
     
     vector<float> ex_sum;
-    vector<float> in_sum;
-    for(int i=0; i< neur_num; i++) {
-      ex_sum.push_back(0);
-      in_sum.push_back(0);
-    }
-
-
+    vector<float> in_sum; 
     float* connect = new float [neur_num*neur_num];
     float* image = new float [neur_num];
     float* voltages = new float [neur_num];
     int* fired = new int [neur_num];
+    float threshold[neur_num];
     init_global(connect, image, voltages, fired, neur_num, excitatory);
 
     printf("%2.4f, %2.4f, \n", voltages[tn], image[tn]);
     printf("%2.4f, %2.4f, \n", voltages[tn2], image[tn2]);
+    vector<int> num_firing;
+    for(int i=0; i< neur_num; i++) {
+      num_firing.push_back(0);
+      threshold[i] = 1;
+      ex_sum.push_back(0);
+      in_sum.push_back(0);
+    }
     /*
     for(int from = 0; from < (neur_num); from++) {
       if (connect[0 * neur_num + from]) {
@@ -94,10 +98,7 @@ int main() {
       }// sums neighbors if neighbors fire.
     }
     */
-    vector<int> num_firing;
-    for(int i=0; i< neur_num; i++) {
-      num_firing.push_back(0);
-    }
+
     // vector<int>* vec_arr = new vector<int> [neur_num];
     // vector<float> n0_volts;
     // vector<float> n915_volts;
@@ -152,7 +153,7 @@ int main() {
           //printf("%s: %2.6f\n", "915", delta[n]);; // voltage trace
         }
 
-        if (voltages[n] + delta[n] >= 1) { // checks for spike
+        if (voltages[n] + delta[n] >= threshold[n]) { // checks for spike
           fired[n] = 1; // spiked list
           int from = n; // syntax formality
           for(int target=0; target < neur_num; target++) {
@@ -163,7 +164,7 @@ int main() {
         }
       }
 
-      chase_spikes(mybabies, voltages, delta, fired, connect, neur_num, s);
+      chase_spikes(mybabies, voltages, delta, fired, connect, neur_num, s, threshold);
       
       int fired_now = 0;
       for(int i=0; i< neur_num; i++) { // voltage updating with delta
@@ -186,16 +187,18 @@ int main() {
           }
           
 
-          if (voltages[i]+delta[i]+neighbor_in >= 1) { // failed overrun double check
+          if (voltages[i]+delta[i]+neighbor_in >= threshold[i]) { // failed overrun double check
             printf("unfired overrun, %d, %2.6f, %2.6f\n", i, voltages[i]+delta[i], voltages[i]+delta[i]+neighbor_in);
           } else {
             voltages[i] = voltages[i]+delta[i]+neighbor_in; // forward step
+            threshold[i] += -1 * lambda * (threshold[i] - 1);
           }
         } else if (fired[i]==1) { // resets spikes
           raster << i << endl;
           times << t << endl;
           num_firing[i] = num_firing[i] + 1;
           voltages[i]=0;
+          threshold[i] += phi;
         }
       }
      
@@ -209,8 +212,8 @@ int main() {
      
       round_counter++;
       if (round_counter==10) {
-        act_ex << float(fir_ex)/float(excitatory) << endl;
-        act_in << float(fir_in)/float(inhibitory) << endl;
+        act_ex << float(fir_ex)/float(cycles * excitatory) << endl;
+        act_in << float(fir_in)/float(cycles * inhibitory) << endl;
         round_counter=0;
         fir_ex=0;
         fir_in=0;
@@ -450,7 +453,7 @@ void init_global(float* connect, float* image, float* voltages, int* fired, int 
 
 }
 
-void chase_spikes(vector<int> to_check, float* voltages, float* delta, int* fired, float* connect, int neur_num, float s) {
+void chase_spikes(vector<int> to_check, float* voltages, float* delta, int* fired, float* connect, int neur_num, float s, float* threshold) {
   // printf("%s\n", "in chase spikes \n");
   vector<int> mybabies;
   int num_fi = 0;
@@ -484,7 +487,7 @@ void chase_spikes(vector<int> to_check, float* voltages, float* delta, int* fire
     float s_N = s / float(neur_num); // constant calculation
     neighbor_in = neighbor_in * s_N; // constant calculation
 
-    if (voltages[here] + delta[here] + neighbor_in >= 1) { // check for new firing
+    if (voltages[here] + delta[here] + neighbor_in >= threshold[i]) { // check for new firing
       if (fired[here]!=1) {
         fired[here] = 1; // sets as fired
         int from = here;
@@ -501,7 +504,7 @@ void chase_spikes(vector<int> to_check, float* voltages, float* delta, int* fire
     }
   }
 
-  chase_spikes(mybabies, voltages, delta, fired, connect, neur_num, s); // recursion
+  chase_spikes(mybabies, voltages, delta, fired, connect, neur_num, s, threshold); // recursion
   return;
 }
 

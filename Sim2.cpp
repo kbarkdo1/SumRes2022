@@ -112,7 +112,8 @@ int main() {
     // printf("all values \n");
     //float B = 1;
     for(float t=0; t<cycles; t = t+step) {
-      printf("Time = %2.3f", t);
+      // printf("Time = %2.3f", t);
+      printf("ex_sum, in_sum, %d: %2.4f %2.4f  ", tn, ex_sum[tn], in_sum[tn]);
       // for every neuron
       float* k1 = new float [neur_num];
       float* k2 = new float [neur_num];
@@ -222,12 +223,13 @@ int main() {
         float ex_input_add=0;
         float in_input_add=0;
         for(int j=0; j<excitatory; j++) {
-          ex_input_add = connect[i*neur_num + j] * fired[j];
+          ex_input_add += connect[i*neur_num + j] * fired[j];
+          // printf(" ex: i: %d, con: %2.4f, fired: %d, ex_input_add: %2.4f, ex_sum: %2.4f", i, connect[i*neur_num+j], fired[j], ex_input_add, ex_sum[i]);
         }
         ex_sum[i] = ex_sum[i] + ex_input_add;
         
         for(int j=excitatory; j<neur_num; j++) {
-          in_input_add = connect[i*neur_num + j] * fired[j];
+          in_input_add += connect[i*neur_num + j] * fired[j];
         }
         in_sum[i] = in_sum[i] + in_input_add;
       }
@@ -262,9 +264,10 @@ int main() {
 
     for(int i=0; i<neur_num; i++) {
       fBp << image[i] << endl;
-      ex_sum_out << ex_sum[i] << endl;
-      in_sum_out << in_sum[i] << endl;
+      ex_sum_out << ex_sum[i]/cycles + image[i] << endl;
+      in_sum_out << in_sum[i]/cycles << endl;
     }
+    
     fBp.close();
     ex_sum_out.close();
     in_sum_out.close();

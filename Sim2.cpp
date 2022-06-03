@@ -30,7 +30,7 @@ int main() {
   // initialize all variables
   // make neuron connections
   float forcings[20];
-  int tn =1;//  and 928    //TRACKING NEURON
+  int tn =928;//  and 928    //TRACKING NEURON
   int tn2=2;
   // float start = float(5)/float(1500);
   float start = 1;
@@ -66,7 +66,8 @@ int main() {
     act_ex.open ("act_ex.txt");
     ofstream act_in;
     act_in.open ("act_in.txt");
-    
+    ofstream tn_thresh;
+    tn_thresh.open ("tn_thresh.txt");
     
     int excitatory = 1000;
     int inhibitory = 1000;
@@ -116,6 +117,7 @@ int main() {
       // printf("Time = %2.3f", t);
       // printf("ex_sum, in_sum, %d: %2.4f %2.4f  ", tn, ex_sum[tn], in_sum[tn]);
       printf("thresh %d: %2.4f \n", tn, threshold[tn]);
+      tn_thresh << threshold[tn] << endl;
 
       // for every neuron
       float* k1 = new float [neur_num];
@@ -194,7 +196,10 @@ int main() {
             printf("unfired overrun, %d, %2.6f, %2.6f\n", i, voltages[i]+delta[i], voltages[i]+delta[i]+neighbor_in);
           } else {
             voltages[i] = voltages[i]+delta[i]+neighbor_in; // forward step
-            threshold[i] += -1 * lambda * (threshold[i] - 1);
+            float r1 = (-1 * lambda * (threshold[i] - 1)) * step;
+            float r2 = (-1 * lambda * ((threshold[i] + r1) - 1)) * step;
+            float rdelt = (r1 + r2) * 0.5;
+            threshold[i] += rdelt;
           }
         } else if (fired[i]==1) { // resets spikes
           raster << i << endl;
@@ -204,7 +209,6 @@ int main() {
           threshold[i] += phi;
         }
       }
-     
       
       for(int i=0; i<excitatory; i++) {
         fir_ex+= fired[i];
@@ -277,7 +281,8 @@ int main() {
     fBp.close();
     ex_sum_out.close();
     in_sum_out.close();
-
+    
+    tn_thresh.close();
     raster.close();
     times.close();
     volt_file.close();

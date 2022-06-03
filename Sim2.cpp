@@ -68,11 +68,13 @@ int main() {
     act_in.open ("act_in.txt");
     ofstream tn_thresh;
     tn_thresh.open ("tn_thresh.txt");
-    
+    ofstream avg_thresh;
+    avg_thresh.open ("avg_thresh.txt");
+
     int excitatory = 1000;
     int inhibitory = 1000;
     int neur_num = excitatory + inhibitory;
-    float cycles = 10.00;
+    float cycles = 30.00;
     
     vector<float> ex_sum;
     vector<float> in_sum; 
@@ -106,7 +108,7 @@ int main() {
     // iterate through all times steps
     // iterate for 10 by 0.01
 
-    float step = 0.001;
+    float step = 0.01;
     float f = forcings[z];
     // float f = float(1)/(150*10); // 150 = average image strength * 10 = avg of 10 connections per neurons.
     // printf("fL %2.6f", f);
@@ -243,6 +245,12 @@ int main() {
         }
         in_sum[i] = in_sum[i] + in_input_add;
       }
+      
+      float thresh_avg=0;
+      for(int i=0; i< neur_num; i++) {
+        thresh_avg += threshold[i];
+      }
+      avg_thresh << float(thresh_avg)/float(neur_num) << endl;
 
       for(int i=0; i< neur_num; i++) {
         fired[i]=0;
@@ -282,6 +290,7 @@ int main() {
     ex_sum_out.close();
     in_sum_out.close();
     
+    avg_thresh.close();
     tn_thresh.close();
     raster.close();
     times.close();

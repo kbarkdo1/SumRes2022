@@ -30,6 +30,8 @@ int main() {
   // initialize all variables
   // make neuron connections
   float forcings[20];
+  float lambs[10];
+  float phis[10];
   int tn =928;//  and 928    //TRACKING NEURON
   int tn2=2;
   // float start = float(5)/float(1500);
@@ -37,17 +39,15 @@ int main() {
   float force_inc = 0.0;
   ofstream f_vals;
   f_vals.open("forcings.txt");
-  for(int i=0; i < 1; i++) {
-    forcings[i] = start+force_inc;
-    start+=force_inc;
-    f_vals << forcings[i] << endl;
-    printf("%2.6f\n", forcings[i]);
+  for(int i=0; i < 20; i++) {
+    
   }
+  
   int round_counter=0;
   float fir_ex=0;
   float fir_in=0;
   float phi = 0.3;
-  float lambda  = 0.2;
+  float lambda  = 0.002;
 
   ofstream avg_fir;
   avg_fir.open("avg_firing.txt");
@@ -74,25 +74,29 @@ int main() {
     int excitatory = 1000;
     int inhibitory = 1000;
     int neur_num = excitatory + inhibitory;
-    float cycles = 30.00;
+    float cycles = 50.00;
     
-    vector<float> ex_sum;
-    vector<float> in_sum; 
     float* connect = new float [neur_num*neur_num];
     float* image = new float [neur_num];
     float* voltages = new float [neur_num];
     int* fired = new int [neur_num];
-    float threshold[neur_num];
     init_global(connect, image, voltages, fired, neur_num, excitatory);
 
     // printf("%2.4f, %2.4f, \n", voltages[tn], image[tn]);
     // printf("%2.4f, %2.4f, \n", voltages[tn2], image[tn2]);
     vector<int> num_firing;
+    vector<float> avg_volts;
+    vector<float> ex_sum;
+    vector<float> in_sum; 
+    float threshold[neur_num];
+    vector<float> neur_thresh; // rolling sum for average neuron threshold per neuron
     for(int i=0; i< neur_num; i++) {
       num_firing.push_back(0);
       threshold[i] = 1;
       ex_sum.push_back(0);
       in_sum.push_back(0);
+      avg_volts.push_back(0);
+      neur_thresh.push_back(0);
     }
     /*
     for(int from = 0; from < (neur_num); from++) {
@@ -116,9 +120,9 @@ int main() {
     // printf("all values \n");
     //float B = 1;
     for(float t=0; t<cycles; t = t+step) {
-      // printf("Time = %2.3f", t);
+      printf("Time = %2.3f \n", t);
       // printf("ex_sum, in_sum, %d: %2.4f %2.4f  ", tn, ex_sum[tn], in_sum[tn]);
-      printf("thresh %d: %2.4f \n", tn, threshold[tn]);
+      // printf("thresh %d: %2.4f \n", tn, threshold[tn]);
       tn_thresh << threshold[tn] << endl;
 
       // for every neuron
@@ -129,6 +133,8 @@ int main() {
       vector<int> mybabies; // list of neurons that need firing
 
       for(int n=0; n < neur_num; n++) {
+        avg_volts[n] += voltages[n]; // rolling sum for eventual average volts
+        neur_thresh[n] += threshold[n];
         if (n==tn) {
           volt_file << voltages[tn] << endl; // voltage trace
         }
@@ -279,11 +285,17 @@ int main() {
     ex_sum_out.open ("ex_sum.txt");
     ofstream in_sum_out;
     in_sum_out.open ("in_sum.txt");
+    ofstream avg_voltages;
+    avg_voltages.open ("avg_voltages.txt");
+    ofstream neur_thresholds;
+    neur_thresholds.open ("avg_neur_thresholds.txt");
 
     for(int i=0; i<neur_num; i++) {
       fBp << image[i] << endl;
       ex_sum_out << ex_sum[i]/cycles + image[i] << endl;
       in_sum_out << in_sum[i]/cycles << endl;
+      avg_voltages << avg_volts[i]/(cycles/step) << endl;
+      neur_thresholds << neur_thresh[i]/(cycles/step) << endl;
     }
     
     fBp.close();
@@ -297,10 +309,7 @@ int main() {
     volt_file.close();
     volt_file2.close();
     volt_times.close();
-
-
-
-
+    neur_thresholds.close();
 
   }
 
@@ -383,8 +392,11 @@ void init_global(float* connect, float* image, float* voltages, int* fired, int 
   for(int i=0; i < neur_num; i++) {   // set horiztonal to zero, no reccurence
     connect[i*neur_num + i] = 0;
   }
-  /*  
+  
   // file read in.
+  float f_e = 1.25;
+  float f_i = 1;
+  float m_0 = float(1)/float(750);
   ifstream library_reader;
   library_reader.clear();
   library_reader.open("im_peppers.txt");
@@ -411,21 +423,31 @@ void init_global(float* connect, float* image, float* voltages, int* fired, int 
   Be.open ("B.txt");
   int counter=0;
   for(int i=0; i< neur_num; i++) {
-    for (int j=0; j<img_vec_len; j++) {
-      int path = rand() % 1000;
+    for (int j=0; j<img_vec_len/2; j++) {
+      int path = rand() % 2000;
       if (path == 1) {
         // all this stuff below is for dynamic connection strengths
-         
-        int seed = rand() % 40;
-        seed = 120-seed;
-        float volt = seed / (150);
-        // printf("index: %d ", i*img_vec_len + j);
-        B[i*img_vec_len + j] = volt;
         
         B[i*img_vec_len + j] = 1;
         Be << "1 ";
         counter += 1;
         if (i==149 && j==5) {printf("\n at 149,5 \n");}
+      } else {
+        B[i*img_vec_len + j] = 0;
+        Be << "0 ";
+      }
+
+    }
+
+    for (int j=img_vec_len/2; j<img_vec_len; j++) {
+      int path = rand() % 1000;
+      if (path == 1) {
+        // all this stuff below is for dynamic connection strengths
+        
+        B[i*img_vec_len + j] = 1;
+        Be << "1 ";
+        counter += 1;
+        // if (i==149 && j==5) {printf("\n at 149,5 \n");}
       } else {
         B[i*img_vec_len + j] = 0;
         Be << "0 ";
@@ -438,24 +460,36 @@ void init_global(float* connect, float* image, float* voltages, int* fired, int 
   }
   Be.close();
   
-  for(int i = 0; i < neur_num; i++) {
+  for(int i = 0; i < excitatory; i++) {
     image[i]=0; 
     printf(" image %d, %2.4f  \n", i, image[i]);
     for(int k = 0; k < 10000; k++) {
       image[i] += B[i*img_vec_len + k] * IM[k];
     }
+    image[i] = image[i] * f_e * m_0;
+    printf(" image %d, %2.4f  \n", i, image[i]);
+ }
+
+ for(int i = excitatory; i < neur_num; i++) {
+    image[i]=0; 
+    printf(" image %d, %2.4f  \n", i, image[i]);
+    for(int k = 0; k < 10000; k++) {
+      image[i] += B[i*img_vec_len + k] * IM[k];
+    }
+    image[i] = image[i] * f_i * m_0;
     printf(" image %d, %2.4f  \n", i, image[i]);
  }
   
   //read in image C++
-  */
   
+  /*
   for(int i = 0; i < neur_num/2; i++) {  // make image input
     image[i] = 1*0.5*sqrt(K);
   }
   for(int i=neur_num/2; i<neur_num; i++) {
     image[i]=0.8*0.5*sqrt(K);
   }
+  */
 
   for(int i = 0; i < neur_num; i++) {   // make neuron voltages
     int seed = rand() % 1000;

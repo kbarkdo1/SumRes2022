@@ -29,26 +29,17 @@ int main() {
   // initialize all variables
   // make neuron connections
   float forcings[20];
-  forcings[0] = 1;
-  forcings[1] = 1/2.5;
-  forcings[2] = 1/5.0;
-  forcings[3] = 1/7.5;
-  forcings[4] = 1/10.00;
-  forcings[5] = 1/25.00;
-  forcings[6] = 1/50.00;
-  forcings[7] = 1/75.00;
-  forcings[8] = 1/100.00;
-  forcings[9] = 1/250.0;
-  forcings[10] = 1/500.0;
-  forcings[11] = 1/750.0;
-  forcings[12] = 1/1000.0;
-  forcings[13] = 1/2500.0;
-  forcings[14] = 1/5000.0;
-  forcings[15] = 1/7500.0;
-  forcings[16] = 1/10000.0;
-  forcings[17] = 1/25000.0;
-  forcings[18] = 1/50000.0;
-  forcings[19] = 1/75000.0;
+  forcings[1] = 1/250.0;
+  forcings[2] = 1/500.0;
+  forcings[3] = 1/750.0;
+  forcings[4] = 1/1000.0;
+  forcings[5] = 1/2500.0;
+  forcings[6] = 1/5000.0;
+  forcings[7] = 1/7500.0;
+  forcings[8] = 1/10000.0;
+  forcings[9] = 1/25000.0;
+  forcings[10] = 1/50000.0;
+  forcings[11] = 1/75000.0;
 
   float lambs[50];
   float phis[50];
@@ -91,7 +82,7 @@ int main() {
   int* fired = new int [neur_num];
   init_global(connect, image, voltages, fired, neur_num, excitatory);
 
-  for(int z=1; z<20; z+=2) {
+  for(int z=0; z<12; z++) {
     for(int phi_index=30; phi_index < 31; phi_index++) {
       for(int lamb_index=20; lamb_index < 21; lamb_index++) {
 

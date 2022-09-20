@@ -1,0 +1,10 @@
+Parameters for m_0 comparison
+
+N_E = 1000;
+N_I = 1000;
+J_EE = J_IE = 1;
+J_II = -1.8;
+J_EI = -2.0;
+K = 40;
+Phi = 0.3;
+Lambda = 0.2

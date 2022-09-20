@@ -1,0 +1,12 @@
+For each of fifty iterations, the simulation records the number of firing events in the excitatory 
+population. At the end of each set of fifty, it calculationes the firing rate of each population.
+It uses the firing rates to compute the metric. By comparing to the previous metric, and a 
+rolling sum of consecutive events, it checks to see if the metric has been above 0.4 for 
+five consecutive cycles or below 0.4 for five consecutive cycles. When the metric reaches
+five consecutive cycles in either case, the simulation records the firing rate, average voltage, and 
+average threshold of the neurons in the previous winning population (which will be the opposite
+of the current event, e.g. if the metric has just reached five consecutive negative rounds
+we may assume that it has been in the positive domain, with the positive population as the 
+previous winning population). Then, it tells the simulation to start recording data for the
+new winning population (negative in this examples) until the metric has five the of opposing
+measurements (the metric is greater than 0.4 for five rounds).

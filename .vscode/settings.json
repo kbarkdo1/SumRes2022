@@ -3,6 +3,9 @@
         "fstream": "cpp",
         "ostream": "cpp",
         "iosfwd": "cpp",
-        "new": "cpp"
+        "new": "cpp",
+        "ios": "cpp",
+        "string": "cpp",
+        "vector": "cpp"
     }
 }

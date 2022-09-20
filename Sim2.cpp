@@ -19,6 +19,10 @@ won't see that inhibition if it fires from just the input and ICs.
 Redundancy: input spiking is calculated twice-as a spiking child
 and again for the total updating)(and discarded the first time)
 
+Switching conditionals for file writing:
+Metric is above 1/3 for 10 consecutive cases
+Leave when metric is below 1/3 for 5 cases
+
 */
 
 
@@ -29,17 +33,9 @@ int main() {
   // initialize all variables
   // make neuron connections
   float forcings[20];
-  forcings[1] = 1/250.0;
-  forcings[2] = 1/500.0;
-  forcings[3] = 1/750.0;
-  forcings[4] = 1/1000.0;
-  forcings[5] = 1/2500.0;
-  forcings[6] = 1/5000.0;
-  forcings[7] = 1/7500.0;
-  forcings[8] = 1/10000.0;
-  forcings[9] = 1/25000.0;
-  forcings[10] = 1/50000.0;
-  forcings[11] = 1/75000.0;
+  for(int i=0; i<20; i++) {
+    forcings[i] = 0.2*(i+1);
+  }
 
   float lambs[50];
   float phis[50];
@@ -65,70 +61,103 @@ int main() {
   l_vals.close();
   p_vals.close();
 
-  int tn =928;//  and 928    //TRACKING NEURON
+  int tn =30;//  and 928    //TRACKING NEURON
   int tn2=2;
   int round_counter=0;
   float fir_ex=0;
   float fir_in=0;
+  int RC2=0;
+  float temp_ex=0;
+  float temp_in=0;
   
   int excitatory = 1000;
   int inhibitory = 1000;
   int neur_num = excitatory + inhibitory;
-  float cycles = 30.00;
+  float cycles = 40.00;
   float step = 0.01;
   float* connect = new float [neur_num*neur_num];
   float* image = new float [neur_num];
   float* voltages = new float [neur_num];
   int* fired = new int [neur_num];
   init_global(connect, image, voltages, fired, neur_num, excitatory);
+  int fileCount =0;
 
-  for(int z=0; z<12; z++) {
-    for(int phi_index=30; phi_index < 31; phi_index++) {
-      for(int lamb_index=20; lamb_index < 21; lamb_index++) {
+  ofstream for_fir;
+  for_fir.open("for_fir.txt");
+  float* k1 = new float [neur_num];
+  float* k2 = new float [neur_num];
+  float* delta = new float [neur_num];
+  
+  vector<int> num_firing;
+  vector<float> avg_volts;
+  float threshold[neur_num];
+  vector<float> neur_thresh; // rolling sum for average neuron threshold per neuron
+  for(int i=0; i< neur_num; i++) {
+    num_firing.push_back(0);
+    threshold[i] = 1;
+    avg_volts.push_back(0);
+    neur_thresh.push_back(0);
+  }
+  
 
+  for(int z=4; z < 5; z++) {
+    for(int phi_index=30; phi_index < 31; phi_index+=10) {
+      for(int lamb_index=5; lamb_index < 6; lamb_index+=5) {
+        fileCount++;
         float f = forcings[z];
-        float phi = phis[phi_index];
-        float lambda  = lambs[lamb_index];
+        // float phi = phis[phi_index];
+        // float lambda  = lambs[lamb_index];
+        float phi = 0.005;
+        float lambda = 0.00625;
         float s = neur_num;
 
-        string avg_voltages_str = "avg_volages_F"+to_string((int)(100000* f))+"_L"+to_string((int)(100*lambda))+"_P"+to_string((int)(100*phi))+".txt";
-        string avg_neur_thresh_str= "avg_neur_thresholds_F"+to_string((int)(100000* f))+"_L"+to_string((int)(100*lambda))+"_P"+to_string((int)(100*phi))+".txt";
-        string f_rate_str= "f_rate_F"+to_string((int)(100000* f))+"_L"+to_string((int)(100*lambda))+"_P"+to_string((int)(100*phi))+".txt";
-        string avg_fir_str= "avg_fir_F"+to_string((int)(100000*f))+"_L"+to_string((int)(100*lambda))+"_P"+to_string((int)(100*phi))+".txt";
+        string avg_voltages_str = "S2_avg_volages_"+to_string(fileCount)+".txt";
+        string avg_neur_thresh_str= "S2_avg_neur_thresholds_"+to_string(fileCount)+".txt";
+        string f_rate_str= "S2_f_rate_"+to_string(fileCount)+".txt";
+        string avg_fir_str= "S2_avg_fir_"+to_string(fileCount)+".txt";
         ofstream avg_fir;
-
+        ofstream act_ex;
+        ofstream act_in;
         avg_fir.open(avg_fir_str);
-        vector<int> num_firing;
-        vector<float> avg_volts;
-        // vector<float> ex_sum;
-        // vector<float> in_sum; 
-        float threshold[neur_num];
-        vector<float> neur_thresh; // rolling sum for average neuron threshold per neuron
+        act_ex.open("act_ex"+to_string(fileCount)+".txt");
+        act_in.open("act_in"+to_string(fileCount)+".txt");
+        ofstream tn_ex;
+        ofstream tn_in;
+        tn_ex.open("tn_ex"+to_string(fileCount)+".txt");
+        tn_in.open("tn_in"+to_string(fileCount)+".txt");
+
+        ofstream avg_thresh;
+        ofstream tn_thresh;
+        ofstream tn_voltage;
+        avg_thresh.open("avg_thresh"+to_string(fileCount)+".txt");
+        tn_thresh.open("tn_thresh"+to_string(fileCount)+".txt");
+        tn_voltage.open("tn_voltage"+to_string(fileCount)+".txt");
+
+        float thresh_acc = 0;
+
         for(int i=0; i< neur_num; i++) {
-          num_firing.push_back(0);
+          num_firing[i]=0;
           threshold[i] = 1;
-          // ex_sum.push_back(0);
-          // in_sum.push_back(0);
-          avg_volts.push_back(0);
-          neur_thresh.push_back(0);
+          // ex_sum[i]=0;
+          // in_sum[i]=0;
+          avg_volts[i]=0;
+          neur_thresh[i]=0;
         }
 
-        
-
         for(float t=0; t<cycles; t = t+step) {
-          printf("Time = %2.3f \n", t);
+          // printf("Time = %2.3f \n", t);
           // printf("ex_sum, in_sum, %d: %2.4f %2.4f  ", tn, ex_sum[tn], in_sum[tn]);
           // printf("thresh %d: %2.4f \n", tn, threshold[tn]);
-          // tn_thresh << threshold[tn] << endl;
+          tn_thresh << threshold[tn] << endl;
+          tn_voltage << voltages[tn] << endl;
+
 
           // for every neuron
-          float* k1 = new float [neur_num];
-          float* k2 = new float [neur_num];
-          float* delta = new float [neur_num];
 
           vector<int> mybabies; // list of neurons that need firing
 
           for(int n=0; n < neur_num; n++) {
+            thresh_acc += threshold[n]; // ADDED FOR Threshold Plot
             avg_volts[n] += voltages[n]; // rolling sum for eventual average volts
             neur_thresh[n] += threshold[n];
             
@@ -154,6 +183,8 @@ int main() {
               }
             }
           }
+          avg_thresh << thresh_acc / neur_num << endl;
+          thresh_acc = 0;
 
           chase_spikes(mybabies, voltages, delta, fired, connect, neur_num, s, threshold);
           
@@ -171,7 +202,7 @@ int main() {
               neighbor_in = neighbor_in * s_N; // neighbor adjustment
               
               if (i==tn && neighbor_in !=0 ) {
-                printf(" %d receieved %2.4f fron neighs \n", tn, neighbor_in);
+                // printf(" %d receieved %2.4f fron neighs \n", tn, neighbor_in);
               }
               /*
               if (i==tn2 && neighbor_in !=0 ) {
@@ -189,12 +220,15 @@ int main() {
                 threshold[i] += rdelt;
               }
             } else if (fired[i]==1) { // resets spikes
+              if (i == tn) {
+                printf("Time at tn firing: %2.4f \n", t);
+              }
               num_firing[i] = num_firing[i] + 1;
               voltages[i]=0;
               threshold[i] += phi;
             }
           }
-          /*
+          
           for(int i=0; i<excitatory; i++) {
             fir_ex+= fired[i];
           }
@@ -203,61 +237,114 @@ int main() {
           }
           
           round_counter++;
-          if (round_counter==10) {
-            // act_ex << float(fir_ex)/float(cycles * excitatory) << endl;
-            // act_in << float(fir_in)/float(cycles * inhibitory) << endl;
+          if (round_counter==40) {
+            act_ex << float(fir_ex)/float(excitatory) << endl;
+            act_in << float(fir_in)/float(inhibitory) << endl;
             round_counter=0;
             fir_ex=0;
             fir_in=0;
           }
-          */
+          
           fired_now=0;
           
+          for(int i=0; i<neur_num; i++) {
+            float ex_input_add=0;
+            float in_input_add=0;
+            for(int j=0; j<excitatory; j++) {
+              ex_input_add += connect[i*neur_num + j] * fired[j];
+              // printf(" ex: i: %d, con: %2.4f, fired: %d, ex_input_add: %2.4f, ex_sum: %2.4f", i, connect[i*neur_num+j], fired[j], ex_input_add, ex_sum[i]);
+            }
+            // ex_sum[i] = ex_sum[i] + ex_input_add;
+            
+            for(int j=excitatory; j<neur_num; j++) {
+              in_input_add += connect[i*neur_num + j] * fired[j];
+            }
+            // in_sum[i] = in_sum[i] + in_input_add;
+
+            if (i == tn) {
+              RC2++;
+              temp_ex += ex_input_add;
+              temp_in += in_input_add;
+              if (RC2 == 50) {
+                tn_ex << temp_ex << endl;
+                tn_in << temp_in << endl;
+                RC2 = 0;
+                temp_ex = 0;
+                temp_in = 0;
+              }
+            }
+          }
+          
+
           for(int i=0; i< neur_num; i++) {
             fired[i]=0;
           }
-          delete[] k1;
-          delete[] k2;
-          delete[] delta;
 
-          float n_avg=0;
-          float total_avg = 0;
-          ofstream f_rate;
-          f_rate.open(f_rate_str);
-          // printf("\n %2.4f %2.4f \n", cycles, (cycles)); 
-          for(int i=0; i<neur_num; i+=1) {
-            n_avg=float(num_firing[i]);
-            n_avg = n_avg / cycles;
-
-            f_rate << n_avg << endl;
-            total_avg+=n_avg;
-            n_avg=0;
-            // printf("total_avg: %d %2.4f  ", i, total_avg);
-          }
-          f_rate.close();
-          // printf("%2.6f %d \n", total_avg, neur_num);
-          total_avg = total_avg / (neur_num);
-          
-
-          ofstream avg_voltages;
-          avg_voltages.open (avg_voltages_str);
-          ofstream neur_thresholds;
-          neur_thresholds.open (avg_neur_thresh_str);
-
-          for(int i=0; i<neur_num; i++) {
-            
-            avg_voltages << avg_volts[i]/(cycles/step) << endl;
-            neur_thresholds << neur_thresh[i]/(cycles/step) << endl;
-          }
-          neur_thresholds.close();
-          avg_voltages.close();
         }
+        float n_avg=0;
+        float E_avg = 0;
+        float I_avg = 0;
+        ofstream f_rate;
+        f_rate.open(f_rate_str);
+        // printf("\n %2.4f %2.4f \n", cycles, (cycles)); 
+        for(int i=0; i<neur_num; i+=1) {
+          n_avg=float(num_firing[i]);
+          n_avg = n_avg / cycles;
+
+          f_rate << n_avg << endl;
+          if (i<excitatory) {
+            E_avg += n_avg;
+          } else {
+            I_avg += n_avg;
+          }
+          
+          n_avg=0;
+          // printf("total_avg: %d %2.4f  ", i, total_avg);
+        }
+        f_rate.close();
+        // printf("%2.6f %d \n", total_avg, neur_num);
+        E_avg = E_avg / (excitatory);
+        I_avg = I_avg / (inhibitory);
+        for_fir << E_avg << " " << I_avg << endl;
+
+        ofstream avg_voltages;
+        avg_voltages.open (avg_voltages_str);
+        ofstream neur_thresholds;
+        neur_thresholds.open (avg_neur_thresh_str);
+
+        for(int i=0; i<neur_num; i++) {
+          
+          avg_voltages << avg_volts[i]/(cycles/step) << endl;
+          neur_thresholds << neur_thresh[i]/(cycles/step) << endl;
+        }
+        neur_thresholds.close();
+        avg_voltages.close();
+        act_ex.close();
+        act_in.close();
+
+        /*
+        ofstream ex_sum_out;
+        ex_sum_out.open ("ex_sum.txt");
+        ofstream in_sum_out;
+        in_sum_out.open ("in_sum.txt");
+        for(int i=0; i<neur_num; i++) {
+          ex_sum_out << ex_sum[i]/cycles + image[i] << endl;
+          in_sum_out << in_sum[i]/cycles << endl;
+        }
+        ex_sum_out.close();
+        in_sum_out.close();
+        */
+        
       }
     }
 
   // Outputs:
 
   }
+  for_fir.close();
+  delete[] k1;
+  delete[] k2;
+  delete[] delta;
 
     // deallocation, baby!
   /*
@@ -266,7 +353,7 @@ int main() {
   delete[] voltages;
   delete[] fired;
   delete[] vec_arr;
-*/
+  */
   return 0;
 };
 
@@ -281,9 +368,10 @@ void init_global(float* connect, float* image, float* voltages, int* fired, int 
   float j_ii = -1.8;
   float j_ie = 1;
   float K = 40;
+  int inhibitory = neur_num - excitatory;
   for(int from = 0; from < excitatory; from++) {
     for(int target = 0; target < excitatory; target++) {
-      int seed = rand() % neur_num/K;
+      int seed = rand() % excitatory/K;
       if (seed == 1) {
         connect[target*neur_num + from] = float(j_ee)/sqrt(K);
         // printf(" %d", connect[target*neur_num + from]);
@@ -296,7 +384,7 @@ void init_global(float* connect, float* image, float* voltages, int* fired, int 
   
   for(int from = excitatory; from < neur_num; from++) {
     for(int target = 0; target < excitatory; target++) {
-      int seed = rand() % neur_num/K;
+      int seed = rand() % inhibitory/K;
       if (seed == 1) {
         connect[target*neur_num + from] = float(j_ei)/sqrt(K);
         // printf(" %d", connect[target*neur_num + from]);
@@ -309,7 +397,7 @@ void init_global(float* connect, float* image, float* voltages, int* fired, int 
 
   for(int from = excitatory; from < neur_num; from++) {
     for(int target = excitatory; target < neur_num; target++) {
-      int seed = rand() % neur_num/K;
+      int seed = rand() % inhibitory/K;
       if (seed == 1) {
         connect[target*neur_num + from] = float(j_ii)/sqrt(K);
         // printf(" %d", connect[target*neur_num + from]);
@@ -322,7 +410,7 @@ void init_global(float* connect, float* image, float* voltages, int* fired, int 
 
   for(int from = 0; from < excitatory; from++) {
     for(int target = excitatory; target < neur_num; target++) {
-      int seed = rand() % neur_num/K;
+      int seed = rand() % excitatory/K;
       if (seed == 1) {
         connect[target*neur_num + from] = float(j_ie)/sqrt(K);
         // printf(" %d", connect[target*neur_num + from]);
@@ -347,15 +435,15 @@ void init_global(float* connect, float* image, float* voltages, int* fired, int 
     A << endl;
   }
   A.close();
-
+  /*
   // file read in.
   float f_e = 1.25;
   float f_i = 1;
-  //float m_0 = float(1)/float(750);
-  float m_0 = 1;
+  // float m_0 = float(1)/float(750);
+  float m_0 = float(1/152.000);
   ifstream library_reader;
   library_reader.clear();
-  library_reader.open("im_peppers.txt");
+  library_reader.open("im_stripes.txt");
   double temp=0;
   vector<float> IM;
   while(!library_reader.eof()) {     //create/fill image vector, IM (c1)
@@ -395,7 +483,7 @@ void init_global(float* connect, float* image, float* voltages, int* fired, int 
     }
 
     for (int j=img_vec_len/2; j<img_vec_len; j++) {
-      int path = rand() % 1000;
+      int path = rand() % 2000;
       if (path == 1) {
         // all this stuff below is for dynamic connection strengths
         
@@ -432,6 +520,14 @@ void init_global(float* connect, float* image, float* voltages, int* fired, int 
     image[i] = image[i] * f_i * m_0;
     // printf(" image %d, %2.4f  \n", i, image[i]);
   }
+  */
+  for(int i = 0; i < neur_num/2; i++) {  // make image input
+    image[i] = 1*1*sqrt(K);
+  }
+  for(int i=neur_num/2; i<neur_num; i++) {
+    image[i]=0.8*1*sqrt(K);
+  }
+  
   ofstream fBp;
   fBp.open ("fBp.txt" );
   for(int i=0; i<neur_num; i++) {
@@ -440,15 +536,6 @@ void init_global(float* connect, float* image, float* voltages, int* fired, int 
           
   fBp.close();
   //read in image C++
-  
-  /*
-  for(int i = 0; i < neur_num/2; i++) {  // make image input
-    image[i] = 1*0.5*sqrt(K);
-  }
-  for(int i=neur_num/2; i<neur_num; i++) {
-    image[i]=0.8*0.5*sqrt(K);
-  }
-  */
 
   for(int i = 0; i < neur_num; i++) {   // make neuron voltages
     int seed = rand() % 1000;
